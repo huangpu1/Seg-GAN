@@ -19,7 +19,7 @@ class DeconvNet:
         import os, wget, tarfile
         if len(os.listdir("data")) < 4:
             print("downloading data")
-            filenames = ['stage_1_train_imgset.tar.gz',
+            filenames = ['VOC_OBJECT.tar.gz', 'VOC2012_SEG_AUG.tar.gz', 'stage_1_train_imgset.tar.gz',
                          'stage_2_train_imgset.tar.gz']
             url = 'http://cvlab.postech.ac.kr/research/deconvnet/data/'
             for filename in filenames:
@@ -115,13 +115,11 @@ class DeconvNet:
 
             logits = tf.reshape(score_1, (-1, 21))
             
-            #sess=tf.InteractiveSession() 
             logits_shape = tf.shape(logits)
             expected_shape = tf.shape(expected)
-           # print(sess.run(logits_shape))
-            # print(sess.run(expected_shape))
             cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.reshape(expected, [-1]),
             logits=logits, name='x_entropy')
+
             self.loss = tf.reduce_mean(cross_entropy, name='x_entropy_mean')
 
             self.train_step = tf.train.AdamOptimizer(self.rate).minimize(self.loss)
@@ -181,6 +179,10 @@ class DeconvNet:
                 print("step {} finished in {:.2f} s with loss of {:.6f}".format(
                     i, time.time() - start,
                     self.loss.eval(session=self.session, feed_dict={self.x: [image], self.y: [ground_truth]})))
+                print("shape1: {}, shape2: {}".format(
+                    self.logits_shape.eval(self.session, feed_dict={self.x: [image], self.y: [ground_truth]}),
+                    self.expected_shape.eval(self.session, feed_dict={self.x: [image], self.y: [ground_truth]})
+                ))
                 self.saver.save(self.session, self.checkpoint_dir + "model", global_step=i)
                 print("Molde {} saved".format(i))
 
