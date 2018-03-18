@@ -17,15 +17,15 @@ class DeconvNet:
         :return:
         """
         import os, wget, tarfile
-        if os.listdir("data") == []:
+        if len(os.listdir("data")) < 4:
             print("downloading data")
-            filenames = ['VOC_OBJECT.tar.gz', 'VOC2012_SEG_AUG', 'stage_1_train_imgset.tar.gz',
+            filenames = ['stage_1_train_imgset.tar.gz',
                          'stage_2_train_imgset.tar.gz']
             url = 'http://cvlab.postech.ac.kr/research/deconvnet/data/'
             for filename in filenames:
                 wget.download(url + filename, out=os.path.join('data', filename))
                 tar = tarfile.open(os.path.join('data', filename))
-                tar.extract(path='data')
+                tar.extractall(path='data')
                 tar.close()
 
                 os.remove(os.path.join('data', filename))
@@ -160,7 +160,7 @@ class DeconvNet:
 
             image = np.float32(cv2.imread('data' + image_file))
             ground_truth = cv2.imread('data' + ground_truth_file[: -1], cv2.IMREAD_GRAYSCALE)
-
+            print(ground_truth)
             ground_truth = (ground_truth / 255) * 20
             print("run train step: " + str(i))
             start = time.time()
