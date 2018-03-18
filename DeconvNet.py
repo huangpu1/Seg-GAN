@@ -25,7 +25,7 @@ class DeconvNet:
             for filename in filenames:
                 wget.download(url + filename, out=os.path.join('data', filename))
                 tar = tarfile.open(os.path.join('data', filename))
-                tar.extract(path='data')
+                tar.extractall(path='data')
                 tar.close()
 
                 os.remove(os.path.join('data', filename))
