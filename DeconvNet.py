@@ -17,7 +17,8 @@ class DeconvNet:
         :return:
         """
         import os, wget, tarfile
-        if os.listdir("data") == ['.gitignore']:
+        if os.listdir("data") == []:
+            print("downloading data")
             filenames = ['VOC_OBJECT.tar.gz', 'VOC2012_SEG_AUG', 'stage_1_train_imgset.tar.gz',
                          'stage_2_train_imgset.tar.gz']
             url = 'http://cvlab.postech.ac.kr/research/deconvnet/data'
