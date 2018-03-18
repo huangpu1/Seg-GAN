@@ -116,6 +116,11 @@ class DeconvNet:
             logits = tf.reshape(score_1, (-1, 21))
             cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.reshape(expected, [-1]),
                                                                            logits=logits, name='x_entropy')
+            logits_shape = tf.shape(logits)
+            expected_shape = tf.shape(expected)
+
+            self.logits_shape = logits_shape
+            self.expected_shape = expected_shape
             self.loss = tf.reduce_mean(cross_entropy, name='x_entropy_mean')
 
             self.train_step = tf.train.AdamOptimizer(self.rate).minimize(self.loss)
@@ -167,10 +172,14 @@ class DeconvNet:
             self.train_step.run(session=self.session,
                                 feed_dict={self.x: [image], self.y: [ground_truth], self.rate: learning_rate})
 
-            if i % 10000 == 0:
+            if i % 50 == 0:
                 print("step {} finished in {:.2f} s with loss of {:.6f}".format(
                     i, time.time() - start,
                     self.loss.eval(session=self.session, feed_dict={self.x: [image], self.y: [ground_truth]})))
+                print("shape1: {}, shape2: {}".format(
+                    self.logits_shape.eval(self.session, feed_dict={self.x: [image], self.y: [ground_truth]}),
+                    self.expected_shape.eval(self.session, feed_dict={self.x: [image], self.y: [ground_truth]})
+                ))
                 self.saver.save(self.session, self.checkpoint_dir + "model", global_step=i)
                 print("Molde {} saved".format(i))
 
