@@ -288,7 +288,7 @@ class DeconvNet:
         delta = tf.SparseTensor(indices, values, tf.to_int64(out_shape))
         return tf.sparse_tensor_to_dense(tf.sparse_reorder(delta))
 
-    def batchnorm(input):
+    def batchnorm(self, input):
         input = tf.identity(input)
 
         channels = input.get_shape()[3]
