@@ -108,60 +108,63 @@ class DeconvNet:
             conv_1_2 = self.conv_layer(conv_1_1, [3, 3, 64, 64], 64, 'conv_1_2')
 
             pool_1, pool_1_argmax = self.pool_layer(conv_1_2)
+            pool_1 = self.batchnorm(pool_1)
 
             conv_2_1 = self.conv_layer(pool_1, [3, 3, 64, 128], 128, 'conv_2_1')
             conv_2_2 = self.conv_layer(conv_2_1, [3, 3, 128, 128], 128, 'conv_2_2')
 
             pool_2, pool_2_argmax = self.pool_layer(conv_2_2)
+            pool_2 = self.batchnorm(pool_2)
 
             conv_3_1 = self.conv_layer(pool_2, [3, 3, 128, 256], 256, 'conv_3_1')
             conv_3_2 = self.conv_layer(conv_3_1, [3, 3, 256, 256], 256, 'conv_3_2')
             conv_3_3 = self.conv_layer(conv_3_2, [3, 3, 256, 256], 256, 'conv_3_3')
 
             pool_3, pool_3_argmax = self.pool_layer(conv_3_3)
+            pool_3 = self.batchnorm(pool_3)
 
             conv_4_1 = self.conv_layer(pool_3, [3, 3, 256, 512], 512, 'conv_4_1')
             conv_4_2 = self.conv_layer(conv_4_1, [3, 3, 512, 512], 512, 'conv_4_2')
             conv_4_3 = self.conv_layer(conv_4_2, [3, 3, 512, 512], 512, 'conv_4_3')
 
             pool_4, pool_4_argmax = self.pool_layer(conv_4_3)
-
+            pool_4 = self.batchnorm(pool_4)
             conv_5_1 = self.conv_layer(pool_4, [3, 3, 512, 512], 512, 'conv_5_1')
             conv_5_2 = self.conv_layer(conv_5_1, [3, 3, 512, 512], 512, 'conv_5_2')
             conv_5_3 = self.conv_layer(conv_5_2, [3, 3, 512, 512], 512, 'conv_5_3')
 
             pool_5, pool_5_argmax = self.pool_layer(conv_5_3)
-
+            pool_5 = self.batchnorm(pool_5)
             fc_6 = self.conv_layer(pool_5, [7, 7, 512, 4096], 4096, 'fc_6')
             fc_7 = self.conv_layer(fc_6, [1, 1, 4096, 4096], 4096, 'fc_7')
 
             deconv_fc_6 = self.deconv_layer(fc_7, [7, 7, 512, 4096], 512, 'fc6_deconv')
 
             unpool_5 = self.unpool_layer2x2(deconv_fc_6, pool_5_argmax, tf.shape(conv_5_3))
-
+            unpool_5 = self.batchnorm(unpool_5)
             deconv_5_3 = self.deconv_layer(unpool_5, [3, 3, 512, 512], 512, 'deconv_5_3')
             deconv_5_2 = self.deconv_layer(deconv_5_3, [3, 3, 512, 512], 512, 'deconv_5_2')
             deconv_5_1 = self.deconv_layer(deconv_5_2, [3, 3, 512, 512], 512, 'deconv_5_1')
 
             unpool_4 = self.unpool_layer2x2(deconv_5_1, pool_4_argmax, tf.shape(conv_4_3))
-
+            unpool_4 = self.batchnorm(unpool_4)
             deconv_4_3 = self.deconv_layer(unpool_4, [3, 3, 512, 512], 512, 'deconv_4_3')
             deconv_4_2 = self.deconv_layer(deconv_4_3, [3, 3, 512, 512], 512, 'deconv_4_2')
             deconv_4_1 = self.deconv_layer(deconv_4_2, [3, 3, 256, 512], 256, 'deconv_4_1')
 
             unpool_3 = self.unpool_layer2x2(deconv_4_1, pool_3_argmax, tf.shape(conv_3_3))
-
+            unpool_3  = self.batchnorm(unpool_3)
             deconv_3_3 = self.deconv_layer(unpool_3, [3, 3, 256, 256], 256, 'deconv_3_3')
             deconv_3_2 = self.deconv_layer(deconv_3_3, [3, 3, 256, 256], 256, 'deconv_3_2')
             deconv_3_1 = self.deconv_layer(deconv_3_2, [3, 3, 128, 256], 128, 'deconv_3_1')
 
             unpool_2 = self.unpool_layer2x2(deconv_3_1, pool_2_argmax, tf.shape(conv_2_2))
-
+            unpool_2 = self.batchnorm(unpool_2)
             deconv_2_2 = self.deconv_layer(unpool_2, [3, 3, 128, 128], 128, 'deconv_2_2')
             deconv_2_1 = self.deconv_layer(deconv_2_2, [3, 3, 64, 128], 64, 'deconv_2_1')
 
             unpool_1 = self.unpool_layer2x2(deconv_2_1, pool_1_argmax, tf.shape(conv_1_2))
-
+            unpool_1 = self.batchnorm(unpool_1)
             deconv_1_2 = self.deconv_layer(unpool_1, [3, 3, 64, 64], 64, 'deconv_1_2')
             deconv_1_1 = self.deconv_layer(deconv_1_2, [3, 3, 32, 64], 32, 'deconv_1_1')
 
@@ -177,11 +180,11 @@ class DeconvNet:
             self.accuracy = tf.reduce_sum(tf.pow(self.prediction - expected, 2))
 
     def weight_variable(self, shape):
-        initial = tf.truncated_normal(shape, stddev=0.1)
+        initial = tf.truncated_normal(shape, mean=0, stddev=0.02)
         return tf.Variable(initial)
 
     def bias_variable(self, shape):
-        initial = tf.constant(0.1, shape=shape)
+        initial = tf.truncated_normal(shape, mean=0, stddev=0.01)
         return tf.Variable(initial)
 
     def conv_layer(self, x, W_shape, b_shape, name, padding='SAME'):
@@ -284,3 +287,15 @@ class DeconvNet:
 
         delta = tf.SparseTensor(indices, values, tf.to_int64(out_shape))
         return tf.sparse_tensor_to_dense(tf.sparse_reorder(delta))
+
+    def batchnorm(input):
+        input = tf.identity(input)
+
+        channels = input.get_shape()[3]
+        offset = tf.get_variable("offset", [channels], dtype=tf.float32, initializer=tf.zeros_initializer())
+        scale = tf.get_variable("scale", [channels], dtype=tf.float32, initializer=tf.random_normal_initializer(1.0, 0.02))
+        mean, variance = tf.nn.moments(input, axes=[0, 1, 2], keep_dims=False)
+        variance_epsilon = 1e-5
+        normalized = tf.nn.batch_normalization(input, mean, variance, offset, scale,
+                                               variance_epsilon=variance_epsilon)
+        return normalized
