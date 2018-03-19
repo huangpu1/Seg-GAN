@@ -17,7 +17,7 @@ class DeconvNet:
         :return:
         """
         import os, wget, tarfile
-        if os.listdir("data") == []:
+        if len(os.listdir("data")) < 4:
             print("downloading data")
             filenames = ['VOC_OBJECT.tar.gz', 'VOC2012_SEG_AUG.tar.gz', 'stage_1_train_imgset.tar.gz',
                          'stage_2_train_imgset.tar.gz']
@@ -114,16 +114,17 @@ class DeconvNet:
             score_1 = self.deconv_layer(deconv_1_1, [1, 1, 21, 32], 21, 'score_1')
 
             logits = tf.reshape(score_1, (-1, 21))
-            cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.reshape(expected, [-1]),
-                                                                           logits=logits, name='x_entropy')
+
             logits_shape = tf.shape(logits)
             expected_shape = tf.shape(expected)
+            cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.reshape(expected, [-1]),
+            logits=logits, name='x_entropy')
 
-            self.logits_shape = logits_shape
-            self.expected_shape = expected_shape
             self.loss = tf.reduce_mean(cross_entropy, name='x_entropy_mean')
 
             self.train_step = tf.train.AdamOptimizer(self.rate).minimize(self.loss)
+            self.logits_shape = logits_shape
+            self.expected_shape = expected_shape
 
             self.prediction = tf.argmax(tf.reshape(tf.nn.softmax(logits), tf.shape(score_1)), dimension=3)
             self.accuracy = tf.reduce_sum(tf.pow(self.prediction - expected, 2))
@@ -144,7 +145,7 @@ class DeconvNet:
         self.resotre_session()
         return self.prediction.eval(session=self.session, feed_dict={image: [image]})[0]
 
-    def train(self, train_stage=1, training_step=5, restore_session=False, learning_rate=1e-6):
+    def train(self, train_stage=1, training_step=1000, restore_session=False, learning_rate=1e-6):
         if restore_session:
             step_start = restore_session()
         else:
@@ -165,21 +166,20 @@ class DeconvNet:
 
             image = np.float32(cv2.imread('data' + image_file))
             ground_truth = cv2.imread('data' + ground_truth_file[: -1], cv2.IMREAD_GRAYSCALE)
-
+            #print(ground_truth)
             ground_truth = (ground_truth / 255) * 20
             print("run train step: " + str(i))
             start = time.time()
             self.train_step.run(session=self.session,
                                 feed_dict={self.x: [image], self.y: [ground_truth], self.rate: learning_rate})
 
+            #self.logits_shape.run(session=self.sesion, feed_dict={self.x: [image], self.y:[ground_truth], self.rate: learning_rate})
+            # self.expected_shape.run(session=self.session, feed_dict={self.x: [image], self.y:[ground_truth], self.rate:learning_rate})
+
             if i % 50 == 0:
                 print("step {} finished in {:.2f} s with loss of {:.6f}".format(
                     i, time.time() - start,
                     self.loss.eval(session=self.session, feed_dict={self.x: [image], self.y: [ground_truth]})))
-                print("shape1: {}, shape2: {}".format(
-                    self.logits_shape.eval(self.session, feed_dict={self.x: [image], self.y: [ground_truth]}),
-                    self.expected_shape.eval(self.session, feed_dict={self.x: [image], self.y: [ground_truth]})
-                ))
                 self.saver.save(self.session, self.checkpoint_dir + "model", global_step=i)
                 print("Molde {} saved".format(i))
 
@@ -246,7 +246,7 @@ class DeconvNet:
     def unpool_layer2x2_batch(self, x, argmax):
         '''
         Args:
-            x: 4D tensor of shape [batch_size x height x width x channels]
+            x: 4D tensor of shape [batch_size x/t height x width x channels]
             argmax: A Tensor of type Targmax. 4-D. The flattened indices of the max
             values chosen for each output.
         Return:
