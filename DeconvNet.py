@@ -173,16 +173,13 @@ class DeconvNet:
             self.train_step.run(session=self.session,
                                 feed_dict={self.x: [image], self.y: [ground_truth], self.rate: learning_rate})
 
-            self.logits_shape.run(session=self.sesion, feed_dict={self.x: [image], self.y:[ground_truth], self.rate: learning_rate})
-            self.expected_shape.run(session=self.session, feed_dict={self.x: [image], self.y:[ground_truth], self.rate:learning_rate})
+            #self.logits_shape.run(session=self.sesion, feed_dict={self.x: [image], self.y:[ground_truth], self.rate: learning_rate})
+            # self.expected_shape.run(session=self.session, feed_dict={self.x: [image], self.y:[ground_truth], self.rate:learning_rate})
+
             if i % 50 == 0:
                 print("step {} finished in {:.2f} s with loss of {:.6f}".format(
                     i, time.time() - start,
                     self.loss.eval(session=self.session, feed_dict={self.x: [image], self.y: [ground_truth]})))
-                print("shape1: {}, shape2: {}".format(
-                    self.logits_shape.eval(self.session, feed_dict={self.x: [image], self.y: [ground_truth]}),
-                    self.expected_shape.eval(self.session, feed_dict={self.x: [image], self.y: [ground_truth]})
-                ))
                 self.saver.save(self.session, self.checkpoint_dir + "model", global_step=i)
                 print("Molde {} saved".format(i))
 
