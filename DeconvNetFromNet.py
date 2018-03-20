@@ -298,8 +298,8 @@ class DeconvNet:
 
     def batchnorm(self, input):
         channels = input.get_shape()[3]
-        offset = self.offset_variable(channels)
-        scale = self.scale_variable(channels)
+        offset = self.offset_variable([channels])
+        scale = self.scale_variable([channels])
         variance_epsilon = 1e-5
         mean, variance = tf.nn.moments(input, axes=[0, 1, 2], keep_dims=False)
         return tf.nn.batch_normalization(input, mean, variance,offset,scale,variance_epsilon)
