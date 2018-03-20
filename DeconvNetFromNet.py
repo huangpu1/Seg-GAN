@@ -6,7 +6,7 @@ import wget
 import tarfile
 import numpy as np
 import cv2
-
+from tensorflow.python.training.moving_averages import assign_moving_average
 
 class DeconvNet:
     def __init__(self, use_cpu=False, checkpoint_dir='./checkpoints2/'):
@@ -108,63 +108,63 @@ class DeconvNet:
             conv_1_2 = self.conv_layer(conv_1_1, [3, 3, 64, 64], 64, 'conv_1_2')
 
             pool_1, pool_1_argmax = self.pool_layer(conv_1_2)
-            pool_1 = self.batchnorm(pool_1)
+            pool_1 = self.batch_norm(pool_1, True)
 
             conv_2_1 = self.conv_layer(pool_1, [3, 3, 64, 128], 128, 'conv_2_1')
             conv_2_2 = self.conv_layer(conv_2_1, [3, 3, 128, 128], 128, 'conv_2_2')
 
             pool_2, pool_2_argmax = self.pool_layer(conv_2_2)
-            pool_2 = self.batchnorm(pool_2)
+            pool_2 = self.batch_norm(pool_2, True)
 
             conv_3_1 = self.conv_layer(pool_2, [3, 3, 128, 256], 256, 'conv_3_1')
             conv_3_2 = self.conv_layer(conv_3_1, [3, 3, 256, 256], 256, 'conv_3_2')
             conv_3_3 = self.conv_layer(conv_3_2, [3, 3, 256, 256], 256, 'conv_3_3')
 
             pool_3, pool_3_argmax = self.pool_layer(conv_3_3)
-            pool_3 = self.batchnorm(pool_3)
+            pool_3 = self.batch_norm(pool_3, True)
 
             conv_4_1 = self.conv_layer(pool_3, [3, 3, 256, 512], 512, 'conv_4_1')
             conv_4_2 = self.conv_layer(conv_4_1, [3, 3, 512, 512], 512, 'conv_4_2')
             conv_4_3 = self.conv_layer(conv_4_2, [3, 3, 512, 512], 512, 'conv_4_3')
 
             pool_4, pool_4_argmax = self.pool_layer(conv_4_3)
-            pool_4 = self.batchnorm(pool_4)
+            pool_4 = self.batch_norm(pool_4, True)
             conv_5_1 = self.conv_layer(pool_4, [3, 3, 512, 512], 512, 'conv_5_1')
             conv_5_2 = self.conv_layer(conv_5_1, [3, 3, 512, 512], 512, 'conv_5_2')
             conv_5_3 = self.conv_layer(conv_5_2, [3, 3, 512, 512], 512, 'conv_5_3')
 
             pool_5, pool_5_argmax = self.pool_layer(conv_5_3)
-            pool_5 = self.batchnorm(pool_5)
+            pool_5 = self.batch_norm(pool_5, True)
             fc_6 = self.conv_layer(pool_5, [7, 7, 512, 4096], 4096, 'fc_6')
             fc_7 = self.conv_layer(fc_6, [1, 1, 4096, 4096], 4096, 'fc_7')
 
             deconv_fc_6 = self.deconv_layer(fc_7, [7, 7, 512, 4096], 512, 'fc6_deconv')
 
             unpool_5 = self.unpool_layer2x2(deconv_fc_6, pool_5_argmax, tf.shape(conv_5_3))
-            unpool_5 = self.batchnorm(unpool_5)
+            unpool_5 = self.batch_norm(unpool_5, True)
             deconv_5_3 = self.deconv_layer(unpool_5, [3, 3, 512, 512], 512, 'deconv_5_3')
             deconv_5_2 = self.deconv_layer(deconv_5_3, [3, 3, 512, 512], 512, 'deconv_5_2')
             deconv_5_1 = self.deconv_layer(deconv_5_2, [3, 3, 512, 512], 512, 'deconv_5_1')
 
             unpool_4 = self.unpool_layer2x2(deconv_5_1, pool_4_argmax, tf.shape(conv_4_3))
-            unpool_4 = self.batchnorm(unpool_4)
+            unpool_4 = self.batch_norm(unpool_4, True)
             deconv_4_3 = self.deconv_layer(unpool_4, [3, 3, 512, 512], 512, 'deconv_4_3')
             deconv_4_2 = self.deconv_layer(deconv_4_3, [3, 3, 512, 512], 512, 'deconv_4_2')
             deconv_4_1 = self.deconv_layer(deconv_4_2, [3, 3, 256, 512], 256, 'deconv_4_1')
 
             unpool_3 = self.unpool_layer2x2(deconv_4_1, pool_3_argmax, tf.shape(conv_3_3))
-            unpool_3  = self.batchnorm(unpool_3)
+            unpool_3  = self.batch_norm(unpool_3, True)
             deconv_3_3 = self.deconv_layer(unpool_3, [3, 3, 256, 256], 256, 'deconv_3_3')
             deconv_3_2 = self.deconv_layer(deconv_3_3, [3, 3, 256, 256], 256, 'deconv_3_2')
             deconv_3_1 = self.deconv_layer(deconv_3_2, [3, 3, 128, 256], 128, 'deconv_3_1')
 
             unpool_2 = self.unpool_layer2x2(deconv_3_1, pool_2_argmax, tf.shape(conv_2_2))
-            unpool_2 = self.batchnorm(unpool_2)
+            unpool_2 = self.batch_norm(unpool_2, True)
             deconv_2_2 = self.deconv_layer(unpool_2, [3, 3, 128, 128], 128, 'deconv_2_2')
             deconv_2_1 = self.deconv_layer(deconv_2_2, [3, 3, 64, 128], 64, 'deconv_2_1')
 
             unpool_1 = self.unpool_layer2x2(deconv_2_1, pool_1_argmax, tf.shape(conv_1_2))
-            unpool_1 = self.batchnorm(unpool_1)
+            unpool_1 = self.batch_norm(unpool_1, True)
             deconv_1_2 = self.deconv_layer(unpool_1, [3, 3, 64, 64], 64, 'deconv_1_2')
             deconv_1_1 = self.deconv_layer(deconv_1_2, [3, 3, 32, 64], 32, 'deconv_1_1')
 
@@ -297,9 +297,38 @@ class DeconvNet:
         return tf.Variable(initial)
 
     def batchnorm(self, input):
-        channels = input.get_shape()[3]
+        channels = tf.identity(input).get_shape()[3]
         offset = self.offset_variable([channels])
         scale = self.scale_variable([channels])
         variance_epsilon = 1e-5
         mean, variance = tf.nn.moments(input, axes=[0, 1, 2], keep_dims=False)
         return tf.nn.batch_normalization(input, mean, variance,offset,scale,variance_epsilon)
+
+
+
+    def batch_norm(x, train, eps=1e-05, decay=0.9, affine=True, name=None):
+        with tf.variable_scope(name, default_name='BatchNorm2d'):
+            params_shape = tf.shape(x)[-1:]
+            moving_mean = tf.get_variable('mean', params_shape,
+                                          initializer=tf.zeros_initializer,
+                                          trainable=False)
+            moving_variance = tf.get_variable('variance', params_shape,
+                                              initializer=tf.ones_initializer,
+                                              trainable=False)
+
+            def mean_var_with_update():
+                mean, variance = tf.nn.moments(x, tf.shape(x)[:-1], name='moments')
+                with tf.control_dependencies([assign_moving_average(moving_mean, mean, decay),
+                                              assign_moving_average(moving_variance, variance, decay)]):
+                    return tf.identity(mean), tf.identity(variance)
+
+            mean, variance = tf.cond(train, mean_var_with_update, lambda: (moving_mean, moving_variance))
+            if affine:
+                beta = tf.get_variable('beta', params_shape,
+                                       initializer=tf.zeros_initializer)
+                gamma = tf.get_variable('gamma', params_shape,
+                                        initializer=tf.ones_initializer)
+                x = tf.nn.batch_normalization(x, mean, variance, beta, gamma, eps)
+            else:
+                x = tf.nn.batch_normalization(x, mean, variance, None, None, eps)
+            return x
