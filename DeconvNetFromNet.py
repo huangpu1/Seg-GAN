@@ -288,14 +288,18 @@ class DeconvNet:
         delta = tf.SparseTensor(indices, values, tf.to_int64(out_shape))
         return tf.sparse_tensor_to_dense(tf.sparse_reorder(delta))
 
-    def batchnorm(self, input):
-        input = tf.identity(input)
+    def offset_variable(self, shape):
+        initial = tf.truncated_normal(shape, mean=0, stddev=0.02)
+        return tf.Variable(initial)
 
+    def scale_variable(self, shape):
+        initial = tf.truncated_normal(shape, mean=0, stddev=0.02)
+        return tf.Variable(initial)
+
+    def batchnorm(self, input):
         channels = input.get_shape()[3]
-        offset = tf.get_variable("offset", [channels], dtype=tf.float32, initializer=tf.zeros_initializer())
-        scale = tf.get_variable("scale", [channels], dtype=tf.float32, initializer=tf.random_normal_initializer(1.0, 0.02))
-        mean, variance = tf.nn.moments(input, axes=[0, 1, 2], keep_dims=False)
+        offset = self.offset_variable(channels)
+        scale = self.scale_variable(channels)
         variance_epsilon = 1e-5
-        normalized = tf.nn.batch_normalization(input, mean, variance, offset, scale,
-                                               variance_epsilon=variance_epsilon)
-        return normalized
+        mean, variance = tf.nn.moments(input, axes=[0, 1, 2], keep_dims=False)
+        return tf.nn.batch_normalization(input, mean, variance,offset,scale,variance_epsilon)
